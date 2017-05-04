@@ -1,0 +1,203 @@
+<project name="billing" default="help" basedir=".">
+
+<!-- ===================== Definitions de propriétés =========================== -->
+
+    <!-- 
+         Toutes les propriétés ANT (répertoire src, build, deploy...) devraient être déclarées dans cette section.
+	 Les propriétés spécifiques à la machine qui exécute le script (Rép tomcat, applis...) sont déclarées dans un	
+	 fichier spécifique : build.properties.
+
+	 Dans cette application , les propriétés suivantes sont définies dans build.properties:
+
+	 o  tomcat.home     - Répertoire d'installation de Tomcat
+	 o  webapps.home    - Répertoire de déploiement de la livraison (war généré)
+    -->
+
+  <property file="build.properties" />
+
+  <property name="app.home"          value="." />
+  <property name="app.name"          value="hellostruts" />
+
+  <property name="src.home"          value="${app.home}/src"/>
+  <property name="lib.home"          value="${app.home}/WebContent/WEB-INF/lib"/>
+  <property name="object.home"       value="${app.home}/object"/>
+  <property name="deploy.home"       value="${app.home}/deploy"/>
+  <property name="doc.home"          value="${app.home}/doc"/>
+  <property name="web.home"          value="${app.home}/WebContent"/>
+
+  <property name="build.home"        value="${app.home}/build"/>
+  <property name="build.classes"     value="${build.home}/WEB-INF/classes"/>
+  <property name="build.lib"         value="${build.home}/WEB-INF/lib"/>
+
+
+<!-- ==================== Chemin de Compilation (Classpath) =========================== -->
+
+    <!-- 
+         Cette section crée le classpath pour la compilation.
+    -->
+
+  <path id="compile.classpath">
+
+    <!-- les fichiers objects de l'application -->
+    <pathelement location="${object.home}"/>
+
+    <!-- Les librairies de l'application -->
+    <fileset dir="${lib.home}">
+      <include name="*.jar"/>
+      <include name="*.zip"/>
+    </fileset>
+
+    <!-- Tous les fichiers/jars rendus dispnibles par Tomcat -->
+    <fileset dir="${tomcat.home}/lib">
+      <include name="*.jar"/>
+    </fileset>
+    
+  </path>
+
+
+<!-- ==================== Cibles de compilation ICI ========================= -->
+
+
+<!-- ==================== "help" Target =================================== -->
+
+    <!--
+         Cible part défaut. Exécutée si aucune cible n'est précisée.
+	 Cela aide l'utilisateur à mettre en oeuvre les fonctionalité juste en tapant 'ant' suivi d'une cible au choix, sans avoir à réaliser une cibe par défaut non voulue par l'utilisateur...
+    -->
+
+ <target name="help" >
+   <echo message="SVP precisez une cible! [utilisation: ant &lt;cible&gt;]" />
+   <echo message="Voici la liste des cibles possibles: "/>
+   <echo message="  clean-all.....Supprime repertoire de compilation, les fichiers .class et fichiers war"/>
+   <echo message="  prepare.......Cree les repertoire necessaires" />
+   <echo message="  compile.......Compile fichiers source" />
+   <echo message="  build.........Construit le fichier WAR a partir des .class et autres fichiers"/>
+   <echo message="  deploy........Copie le WAR dans les repertoire de livraison de Tomcat (webapps)" />
+   <echo message="  javadoc.......Genere la javadoc pour cette application" />
+ </target>
+
+<!-- ==================== "clean-all" Target ============================== -->
+    
+    <!--
+          Cette cible néttoie toute trace de l'application de façon à permettre nouvelle compilation
+              -->
+
+ <target name="clean-all" >
+    <delete dir="${build.home}"/>
+    <delete dir="${object.home}"/>
+    <delete dir="${deploy.home}"/>
+
+    <!-- Ne peut détruire le répertoire si tomcat lancé -->
+    <delete dir="${webapps.home}/${app.name}" failonerror="false"/>  
+
+    <!-- suppression du war même si tomcat fonctionne -->
+    <delete dir="${webapps.home}/${app.name}.war" />                
+
+    <!-- delete the javadoc -->
+    <delete dir="${doc.home}"/>
+
+ </target>
+
+<!-- ==================== "prepare" Target ================================ -->
+ 
+    <!--
+          Cette cible est exécutée avant les autres
+	  pour être sur que les répertoires necessaires existent. Il les crée si besoin....
+	  
+	  Vous pouvez mettre ici d'autres étapes de compilation éventuelle.
+    -->
+
+  <target name="prepare">
+
+    <echo message="Tomcat Home  = ${tomcat.home}" />
+    <echo message="webapps Home = ${webapps.home}" />
+
+    <mkdir  dir="${object.home}"/>
+    <mkdir  dir="${deploy.home}"/>
+
+    <mkdir  dir="${doc.home}"/>
+    <mkdir  dir="${doc.home}/api"/>
+
+    <mkdir dir="${build.home}"/>
+    <mkdir dir="${build.home}/WEB-INF" />
+    <mkdir dir="${build.home}/WEB-INF/classes" />
+    <mkdir dir="${build.home}/WEB-INF/lib" />
+
+  </target>
+
+<!-- ==================== "compile" Target ================================ -->
+
+    <!-- 
+		Cette cible compile uniquement les fichiers java plus récents que leur correspondant .class
+     -->
+
+  <target name="compile" depends="prepare"  >
+    <javac srcdir="${src.home}" destdir="${object.home}"  debug="yes" >
+        <classpath refid="compile.classpath"/>
+    </javac>
+  </target>
+
+<!-- ==================== "build" Target ================================== -->
+
+    <!--
+    	Cette cible construit le fichier WAR de l'application en créant d'abord 
+    	la structure de build ${build.home}
+    	et créer le war en utilisant la tache ant <war>
+    -->
+
+  <target name="build" depends="compile" >
+
+    <!-- Copie tout le contenu de webapp (jsp , html, tld , xml, etc. -->
+    <copy    todir="${build.home}">
+      <fileset dir="${web.home}"/>
+    </copy>
+
+    <!-- Ici, copie les classes java -->
+    <copy    todir="${build.home}/WEB-INF/classes">
+      <fileset dir="${object.home}"/>
+    </copy>
+
+    <!-- ici, copie les ficiers de propriétés, etc qui vont ds le classpath -->
+    <copy    todir="${build.home}/WEB-INF/classes">
+      <fileset dir="${src.home}">
+         <include name="**/**/**/*.properties" />
+         <include name="**/*.prop" />
+      </fileset>
+    </copy>
+
+    <!-- Ici, copy tous les fichiers jars necessaires -->
+    <copy    todir="${build.home}/WEB-INF/lib">
+      <fileset dir="${lib.home}" />
+    </copy>
+
+    <!-- Crée le fichier <war> -->
+    <jar jarfile="${deploy.home}/${app.name}.war"
+         basedir="${build.home}"/>
+
+  </target>
+
+
+
+<!-- ==================== "deploy" Target ================================= -->
+
+    <!-- Cete cible copie simplement le fichier WAR du répertoire deploy 
+    	vers le répertoire webapps de tomcat
+    -->
+
+  <target name="deploy" depends="build" >
+
+    <!-- Copy le contenu du répertoire build -->
+    <copy todir="${webapps.home}"  file="${deploy.home}/${app.name}.war" />
+
+  </target>
+
+<!-- ==================== "doc" Target ==================================== -->
+
+    <!-- Cette tache crée la javadoc. Dépend uniquement dela cible 'compile'. 
+    N'est pas exécuté ds cadre d'un build. L'éxécuter à part.
+
+TODO : A vous de jouer !
+    -->
+
+
+</project>

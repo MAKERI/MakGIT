@@ -14,4 +14,7 @@ public final class Constants {
      */
     public static final String HELLO_KEY = "com.objis";
 
+    /**
+     * à definir une méthode pour test unitaire
+     */
 }

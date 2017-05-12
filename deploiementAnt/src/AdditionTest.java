@@ -24,9 +24,21 @@ public class AdditionTest {
       assertEquals(new Long(4), 
                    op.calculer(new Long(1), new Long(3)));
    }
- 
+ /**
+  * faux
+  * @throws Exception
+  */
+//   @Test
+//   public void testLireSymbole() throws Exception {
+//      assertEquals((Character)'+', op.lireSymbole());
+//   }
+   
+   /**
+    * just
+    * @throws Exception
+    */
    @Test
    public void testLireSymbole() throws Exception {
-      assertEquals((Character)'+', op.lireSymbole());
+      assertEquals((Character)'-', op.lireSymbole());
    }
 }
